@@ -237,9 +237,7 @@ ORDER BY total_cpu_seconds DESC
 
 ## Examples
 
-<!--
-This section mainly uses the sample schema included in the official Cloud Spanner documentation.
--->
+<!-- This section mainly uses the sample schema included in the official Cloud Spanner documentation. -->
 
 ここからは実際の実行計画とプロファイル情報を元に解説します。
 慣れれば実行計画だけでも読み取れることは多いですが、数で説明した方がわかりやすいと思うので Spanner の公式ドキュメントに含まれるサンプルスキーマ上にランダムに入れたデータを使い解説します。
@@ -770,8 +768,10 @@ Sort オペレーションは必要なくなり、インデックス順に 1 行
 余談ですが、実行計画では Sort オペレーションがなくてもこのクエリの結果は順序が保証されますが、 `ORDER BY` を削除してしまうと順序の保証はなくなります。
 他のデータベースで先入観があるかもしれませんが、 `ORDER BY` なしにセカンダリインデックスやプライマリキーの順序になることを期待しないようにしましょう。
 
+
 https://cloud.google.com/spanner/docs/sql-best-practices#use_order_by_to_ensure_the_ordering_of_your_sql_results
 > Spanner guarantees result ordering only if the ORDER BY clause is present in the query.
+:::
 
 ### JOIN (TODO)
 
