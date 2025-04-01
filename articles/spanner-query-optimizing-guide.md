@@ -240,10 +240,12 @@ ORDER BY total_cpu_seconds DESC
 * 可能であれば、スキーマ設計の初期の時点で双方のテーブルを INTERLEAVE を活用することによって分散 JOIN 不要にすることを検討する。
 * または JOIN 対象となるテーブルと INTERLEAVE されたセカンダリインデックスを使うことで分散 JOIN が回避できるかどうかも検討する。
 * それ以外の場合でも Hash JOIN はキーを活用できず巨大なハッシュテーブルの構築を必要とする場合が多いので OLTP には向きません。
-  * 適切なキーを使った Distributed Cross Apply や Merge JOIN で最適化を試みること。
-    * Distributed Cross Apply が必要な場合は Input 側、 Map 側双方をできるだけ最適化する。例えば、 JOIN 条件の列を全てセカンダリインデックスに含める。
+  * 適切なキーを使った Distributed Cross Apply や [Merge JOIN](https://cloud.google.com/spanner/docs/query-execution-operators#merge-join) で最適化を試みること。
+    * 駆動表となる側の行が絞り込めることがわかっている場合は Distributed Cross Apply が良いケースが多いでしょう。Input 側、 Map 側双方をできるだけ最適化することが好ましいでしょう。
+      * 例えば、 JOIN 条件として使われる列を全てセカンダリインデックスに含めると、最終的な結果として必要がない行のベーステーブルを取得することを避けられます。
         * https://cloud.google.com/spanner/docs/whitepapers/optimizing-schema-design?hl=en#storing_index_clause
     * 駆動表がある程度大きく同じ順序の同じ範囲を JOIN する場合であれば Merge JOIN が最適かもしれません。
+  * TODO: [Push broadcast hash join](https://cloud.google.com/spanner/docs/query-execution-operators#push-broadcast-hash-join) が最適なケースについて
 
 ## Examples
 
