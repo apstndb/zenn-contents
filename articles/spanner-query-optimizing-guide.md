@@ -367,8 +367,7 @@ optimizer version:    5
 optimizer statistics: auto_20230619_14_33_08UTC
 ```
 
-<!-- Since the Duration column is not included in the secondary index SongsBySongName, this query does a distributed JOIN of over 16000 entries in the Songs table and then filters for Duration in the Table Scan side Filter Scan. As a result, this query is not fast.
--->
+<!-- Since the Duration column is not included in the secondary index SongsBySongName, this query does a distributed JOIN of over 16000 entries in the Songs table and then filters for Duration in the Table Scan side Filter Scan. As a result, this query is not fast. -->
 
 `Duration` カラムはセカンダリインデックス `SongsBySongName` に含まれていないため、このクエリは 16949行をセカンダリインデックスから読み取った後で、全ての列を取得するために Songs テーブルと分散 JOIN してから Table Scan 側の Filter Scan で `Duration` のフィルタを行い、最終的な815行の結果を得ています。
 つまり、わざわざ分散 JOIN した16000行以上を捨てています。
