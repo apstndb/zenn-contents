@@ -33,6 +33,7 @@ published: true
   - 例えば必要に応じて [Data Boost](https://cloud.google.com/spanner/docs/databoost/databoost-overview) を有効にし、 BigQuery([`EXTERNAL_QUERY` もしくは外部データセット](https://cloud.google.com/bigquery/docs/spanner-federated-queries?hl=en)), [Cloud Dataflow](https://cloud.google.com/spanner/docs/dataflow-connector?hl=en) などを使う選択肢があります。
 - この記事に書かれたプラクティスが一般的に適用可能で常に問題が解決できるというような主張はしません。個別事象で問題を解決するために検討できる選択肢を増やすのが目的です。
 - トレードオフが存在することを否定する意図はありません。
+- この内容を全て理解するべきであるとは主張していません。Spanner にとって最も得意なワークロード以外も処理したい時に1つずつ解決できないかどうかを試行錯誤してみようという話です。
 
 ## 指針
 
