@@ -3,7 +3,7 @@ title: "実行計画を元にした Spanner クエリ最適化の実践"
 emoji: "🍣"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [spanner]
-published: false
+published: true
 ---
 
 私は「Spanner でも他の RDBMS で当たり前に行われているのと同程度には実行計画を理解する」ことをテーマに情報の公開や社内での啓蒙・トラブルシューティングなどの活動を行ってきました。
@@ -48,11 +48,15 @@ published: false
     * 時期尚早な最適化をする必要はありませんが、クエリが期待と大きく違わない形で処理可能なことを他の人もレビューできる状態にすることが重要です。
         * 最初は読めなくても、事後に振り返りをしているうちに読めるようになるでしょう。
 * データの有無によってコストベース最適化によって異なる実行計画が選ばれる場合はありますが、運良く良くなることに期待するのではなく、運悪く悪くなる可能性を想定しましょう。
-  * オプティマイザバージョンを下げた方が予測可能性が高いケースもあります。具体的には[バージョン5](https://cloud.google.com/spanner/docs/query-optimizer/versions#version-5)からコストベースで最適化される項目が増えたので[バージョン4](https://cloud.google.com/spanner/docs/query-optimizer/versions#version-4)に固定することも検討の価値があります。
+  * 別の選択をされた場合に大きくパフォーマンス変化が起きることが想定されるのであれば、 `FORCE_INDEX`, `JOIN_METHOD` などヒントは付けた方が良いでしょう。
+    * 逆に、クエリオプティマイザが期待通りにクエリを実行しない理由から洞察が得られることもあります。オプティマイザと自分の期待が一致するのであれば一定は安心できるでしょう。
+  * オプティマイザバージョンを下げた方が予測可能性が高くなることもあります。具体的には[バージョン5](https://cloud.google.com/spanner/docs/query-optimizer/versions#version-5)からコストベースで最適化される項目が増えたので[バージョン4](https://cloud.google.com/spanner/docs/query-optimizer/versions#version-4)に固定することも検討の価値があります。
 * 定期的に非効率なクエリの存在をレビューしましょう。
     * Query Stats https://cloud.google.com/spanner/docs/introspection/query-statistics
     * Query Insights https://cloud.google.com/spanner/docs/using-query-insights
-* 発行される可能性があるクエリが変わった結果、無駄に Write コストだけ掛かっているインデックスがないかどうかは定期的にチェックしましょう。
+    * これらに現れるクエリの種類が多すぎるのであればクエリパラメータが使われていないものがないかを確認しましょう。
+      * クエリパラメータを活用できていない動的クエリの弊害を受け、実行計画キャッシュにも影響するため、パフォーマンスにも影響があります。 これは公式ドキュメントの [SQL ベストクラクティスの Use query parameters](https://cloud.google.com/spanner/docs/sql-best-practices#query-parameters) や [Life of a Spanner Query](https://cloud.google.com/spanner/docs/whitepapers/life-of-query#caching) などにも記述があります。
+* 発行される可能性があるクエリが変わった結果不要になって無駄に Write コストだけ掛かっているインデックスがないかどうかは定期的にチェックしましょう。
 
 ### トレードオフについて
 
@@ -157,17 +161,6 @@ optimizer statistics: auto_20230616_13_28_03UTC
 
 Query Statistics を使うことで本番環境で負荷が多いクエリを見つけることができます。
 
-<!--
-Cautionary Note
-
-* Workloads that use Partition Query, such as export jobs for backup, are not included in Query Statistics.
-* RPCs that are reads, not SQL queries, are only included in Read Statistics, not Query Statistics.
--->
-
-<!--
-Example: query to get the load per query from the last 7 days in order of total CPU load
--->
-
 例: 過去7日間からクエリごとの負荷を合計の CPU 負荷順で取得するクエリ
 
 
@@ -192,10 +185,6 @@ GROUP BY TEXT_FINGERPRINT
 ORDER BY total_cpu_seconds DESC
 ```
 
-<!--
-Since it is easier to handle when imported into a spreadsheet, use [execspansql](https://github.com/apstndb/execspansql) to retrieve the query execution results in CSV.
--->
-
 結果を共有するために CSV で出力して Google Sheets などのスプレッドシートにインポートするのも一つの方法です。
 
 合計の負荷が大きい順に取得しているため、上位にあるものはどれもパフォーマンス改善上重要なクエリであると考えられます。観点としては下記のようなものがあります。
@@ -208,56 +197,19 @@ Since it is easier to handle when imported into a spreadsheet, use [execspansql]
 * `avg_cpu_seconds`, `avg_latency_seconds` が大きい。
   * 単体で負荷が高いクエリは実行時に負荷のスパイクを作る場合があります。
 
-<!--
-Since the queries are taken in order of total load, any of the top ones are considered to be important queries for performance improvement. The following perspectives are available
-
-* `execution_count` is very large.
-    * Even if the load and latency are small by themselves, minor improvements may make a significant difference in load.
-* `avg_rows_scanned` is more than twice as large as `avg_rows` in the query result.
-    * If the minimum number of rows needed to return a result is more than that required to read both the secondary index and the table, it is possible that some rows are being discarded after being needlessly scanned and processed.
-    * If you are using the Aggregate Function as an exception, `avg_rows` becomes less.
-* `avg_cpu_seconds` and `avg_latency_seconds` are large.
-    * Queries with high load by itself may create load spikes at runtime.
--->
-
-<!-- ## Optimization Patterns for each SQL clauses -->
-
 ## SQL の句ごとの最適化パターン
-
-<!--
-* `WHERE`
-    * As a general rule, if a table has enough rows that a full scan is not appropriate and a full scan is seen in the execution plan, a secondary index corresponding to the `WHERE` clause should be used to resolve the problem.
-        * Only consider sharding when a global search is necessary for columns that would become hotspots if a secondary index is created for timestamps, sequential numbers, etc.
-            * **"Useless use of sharding" is an anti-pattern.**
-        * Filtering for timestamps may be more efficient than secondary indexes that require distributed joins if commit timestamp optimization is available on the base table.
-    * Whenever possible, include filters in secondary indexes so that they are processed on the Index Scan side rather than the Table Scan side after the back join.
-        * See: https://cloud.google.com/spanner/docs/query-execution-plans?hl=en#index_and_back_join_queries
-    * Whenever possible, make sure filters are processed in Seek Condition rather than Residual Condition, which filters in-memory at scan time.
-        * See: https://cloud.google.com/spanner/docs/query-execution-operators?hl=en#filter_scan
-    * Ensure that the Seek Condition makes sense as a contiguous region scan.
-        * Example: `UserId BETWEEN 0 AND 999999999 AND CreatedAt BETWEEN @from AND @to` for UserId, CreatedAt DESC is a Seek Condition and not a full scan. However, it is meaningless because it scans the area divided by countless UserId. If the frequency is high, introduce ShardId to treat it as a scan of a few contiguous regions.
--->
 
 #### WHERE
 
 * 原則として、一定以上の行数があるテーブルに対する OLTP 処理ではフルスキャンは許容できないので、実行計画上 Full Scan を見た場合は `WHERE` 句に対応したセカンダリインデックス等で解消すること。
     * タイムスタンプや連番など素直にセカンダリインデックスを作るとホットスポットになるカラムをグローバルに検索しなければならない場合にはアプリケーションレベルシャーディングを検討すること。
     * 要件を満たすために必要ではないアプリケーションレベルシャーディングの濫用はアンチパターンです。無闇にキー空間上の分布を均等にすることはランダムスキャンに対するレンジスキャンの優位性などを損なう危険があります。
-* タイムスタンプに対するフィルタはベーステーブル上で Commit timestamp optimization できる場合は分散 JOIN が必要なセカンダリインデックスよりも効率的な場合があります。
+* [Commit timestamp optimization](https://cloud.google.com/spanner/docs/commit-timestamp#optimize) が有効になる条件下では、バックジョインを伴うセカンダリインデックススキャンよりも効率的になる可能性があります。ただし、スキャン範囲や他の条件によってはこの限りではありません
 * 可能な限り、 back join 後の Table Scan ではなく Index Scan 側でフィルタが処理されるようにセカンダリインデックスに含めること。
 * 可能な限り、フィルタがスキャン時にインメモリでフィルタする Residual Condition ではなく Seek Condition で処理できていることを確認すること。
   * See also: https://cloud.google.com/spanner/docs/query-execution-operators?hl=en#filter_scan
 * Seek Condition は連続領域のスキャンとして意味があることを確認すること。
   * 例: UserId, CreatedAt DESC に対する `UserId BETWEEN 0 AND 999999999 AND CreatedAt BETWEEN @from AND @to` は Seek Condition となり full scan にはならないが、無数の UserId ごとに分割された領域をスキャンすることになるため意味がない。頻度が高い場合は ShardId の導入などで数少ない連続領域のスキャンとして扱えるようにする。
-
-<!--
-* ORDER BY & LIMIT
-    * Utilize PK or secondary indexes that match the `ORDER BY` order whenever possible, and ensure that Sort is not present in the execution plan.
-        * Cloud Spanner indexes cannot be sorted in reverse order. Reference:.
-            * https://cloud.google.com/spanner/docs/secondary-indexes?hl=en#index-scanning
-    * Ensure that the amount of scanning is also reduced when the number specified in `LIMIT` is reduced.
-    * If it is difficult to match the index order, `STORING` the columns written to `ORDER BY` so that `SORT LIMIT` can be performed on the index by itself.
--->
 
 #### ORDER BY & LIMIT
 
@@ -267,29 +219,11 @@ Since the queries are taken in order of total load, any of the top ones are cons
 * `LIMIT` に指定した数を減らした際にスキャンする量も減ることを確認すること。
 * もしもインデックス順と一致させることが難しい場合は、インデックス単体で `SORT LIMIT` を行うことができるように `ORDER BY` に書かれた列を `STORING` すること。
 
-
-<!--
-* Aggregate Function & `GROUP BY`
-    * Columns used for Aggregate Function should be included in the secondary index as part of the key or in the form of `STORING` to avoid a large number of distributed `JOIN`s.
-    * Ensure that the columns are scanned in the same order as the columns specified in `GROUP BY` whenever possible, so that they can be handled by Stream Aggregate rather than Hash Aggregate.
-        * See: https://cloud.google.com/spanner/docs/query-execution-operators?hl=en#aggregate
--->
-
 #### 集約関数 & `GROUP BY`
 
 * 集約関数 に使われる列はキーの一部か `STORING` の形でセカンダリインデックスに含め、大量の分散 JOIN を回避すること。
 可能な限り GROUP BY に指定した列と一致した順序でスキャンすることで、 Hash Aggregate ではなく Stream Aggregate で処理できることを確認する。
   * See: https://cloud.google.com/spanner/docs/query-execution-operators?hl=en#aggregate
-
-<!--
-* `JOIN` & Anti/Semi `JOIN`(`EXISTS`, `NOT EXISTS`, `IN` subqueries)
-    * If possible, eliminate distributed JOINs by leveraging INTERLEAVE early in the schema design process.
-        * https://cloud.google.com/spanner/docs/whitepapers/optimizing-schema-design?hl=en#storing_index_clause
-    * If distributed `JOIN`s can be avoided by using an `INTERLEAVE`ed secondary index with the table being `JOIN`ed, consider doing so.
-    * In other cases, Hash JOIN often requires the construction of a huge hash table because it cannot utilize the keys, so try to optimize by using Distributed Cross Apply or Merge JOIN with appropriate keys.
-        * Distributed Cross Apply optimizes both Input and Map sides as much as possible. For example, include all columns in the JOIN condition in the secondary index.
-        * Consider Merge `JOIN` when `JOIN`ing the same range in the same order.
--->
 
 #### `JOIN` & Anti/Semi `JOIN`(`EXISTS`, `NOT EXISTS`, `IN` サブクエリ)
 
@@ -299,15 +233,6 @@ Since the queries are taken in order of total load, any of the top ones are cons
     * Distributed Cross Apply は Input 側、 Map 側双方をできるだけ最適化する。例えば、 JOIN 条件の列を全てセカンダリインデックスに含める。
         * https://cloud.google.com/spanner/docs/whitepapers/optimizing-schema-design?hl=en#storing_index_clause
     * 同じ順序の同じ範囲を JOIN する場合は Merge JOIN を検討する。
-
-<!--
-* SELECT
-    * Back joins by SELECTing columns not in the secondary index are distributed JOINs for non-interleave indexes and incur non-negligible costs. If it is easier to scan only indexes, do so.
-        * See: https://cloud.google.com/spanner/docs/query-execution-plans?hl=en#index_and_back_join_queries
-    * Even for queries that require SELECTing nearly all of a table's columns, consider avoiding a distributed JOIN of the secondary index and base table by STORING in cases where read performance improvement is very important. For example:
-        * Queries with very strict latency requirements that require stable performance under heavy load.
-        * Queries that account for the majority of the load on the instance and can be expected to provide significant load reduction.
--->
 
 ## Examples
 
