@@ -81,6 +81,15 @@ Read のパフォーマンスを高めるには Write を犠牲にすること�
 この記事では、どのようにクエリに最適化することで Write のコストを無駄にせずに、 Read のパフォーマンスを上げられるかについてフォーカスします。
 
 :::message
+最適化対象の Read のパフォーマンスには例えば次のような指標が含まれます。（網羅的ではないです）
+
+- レイテンシ
+  - Spanner は内部的にもストリーム処理であり、 `ExecuteStreamingSql` API 使用時など Time To First Byte が重要なケースも
+- スループット
+- CPU 負荷、メモリの使用量など
+- ロック範囲
+- クエリに関与するスプリットの数(Participants)
+
 この記事では触れませんが、クエリ結果を使って更新を行う DML は純粋な更新ではなくクエリの側面を持っているので、セカンダリインデックスによる最適化が必要な場合があります。
 また、トレードオフが発生しない場合もあります。例えばプライマリキーよりもそのクエリに適したセカンダリインデックスが存在しないクエリにはセカンダリインデックスは不要なため、 Read と Write の最適は一致するためトレードオフは発生しません。これは Spanner のスキーマ設計の一つの理想だと言えるでしょう。
 :::
@@ -230,10 +239,11 @@ ORDER BY total_cpu_seconds DESC
 
 * 可能であれば、スキーマ設計の初期の時点で双方のテーブルを INTERLEAVE を活用することによって分散 JOIN 不要にすることを検討する。
 * または JOIN 対象となるテーブルと INTERLEAVE されたセカンダリインデックスを使うことで分散 JOIN が回避できるかどうかも検討する。
-* それ以外の場合でも Hash JOIN はキーを活用できず巨大なハッシュテーブルの構築を必要とする場合が多いので適切なキーを使った Distributed Cross Apply や Merge JOIN で最適化を試みること。
-    * Distributed Cross Apply は Input 側、 Map 側双方をできるだけ最適化する。例えば、 JOIN 条件の列を全てセカンダリインデックスに含める。
+* それ以外の場合でも Hash JOIN はキーを活用できず巨大なハッシュテーブルの構築を必要とする場合が多いので OLTP には向きません。
+  * 適切なキーを使った Distributed Cross Apply や Merge JOIN で最適化を試みること。
+    * Distributed Cross Apply が必要な場合は Input 側、 Map 側双方をできるだけ最適化する。例えば、 JOIN 条件の列を全てセカンダリインデックスに含める。
         * https://cloud.google.com/spanner/docs/whitepapers/optimizing-schema-design?hl=en#storing_index_clause
-    * 同じ順序の同じ範囲を JOIN する場合は Merge JOIN を検討する。
+    * 駆動表がある程度大きく同じ順序の同じ範囲を JOIN する場合であれば Merge JOIN が最適かもしれません。
 
 ## Examples
 
