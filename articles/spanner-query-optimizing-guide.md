@@ -250,19 +250,7 @@ This section mainly uses the sample schema included in the official Cloud Spanne
 
 ### WHERE
 
-<!-- #### Avoid full scans and prefer Seek Condition -->
 #### フルスキャンを避け、 Seek Condition になるようにする
-
-<!--
-As a general rule, make sure that queries with WHERE clauses are not full scans so that the more data you have, the slower the query will be.
-However, the simple use of a secondary index often results in distributed JOINs, so using a secondary index may not improve performance in the following cases
-
-* Data that is small and not expected to grow in volume (x = 100 or so)
-    * For example, master data
-* Queries that retrieve a large percentage (x > 20%) of the base table
-
-Also, be sure to check not just that the query is using secondary indexes, but that they are being used efficiently.
--->
 
 フルスキャンがあるクエリは通常データが増えるほど遅くなりますし、 `LIMIT` があったとしても read-write transaction の中で発行するとそのテーブルの全てをロックします。
 そのようなクエリが生まれないように `WHERE` 句があるクエリはフルスキャンとして処理されていないかどうかを確認しましょう。
@@ -380,9 +368,7 @@ optimizer version:    5
 optimizer statistics: auto_20230619_14_33_08UTC
 ```
 
-<!--
-Since the Duration column is not included in the secondary index SongsBySongName, this query does a distributed JOIN of over 16000 entries in the Songs table and then filters for Duration in the Table Scan side Filter Scan.
-As a result, this query is not fast.
+<!-- Since the Duration column is not included in the secondary index SongsBySongName, this query does a distributed JOIN of over 16000 entries in the Songs table and then filters for Duration in the Table Scan side Filter Scan. As a result, this query is not fast.
 -->
 
 `Duration` カラムはセカンダリインデックス `SongsBySongName` に含まれていないため、このクエリは 16949行をセカンダリインデックスから読み取った後で、全ての列を取得するために Songs テーブルと分散 JOIN してから Table Scan 側の Filter Scan で `Duration` のフィルタを行い、最終的な815行の結果を得ています。
@@ -431,14 +417,6 @@ optimizer version:    5
 optimizer statistics: auto_20230619_14_33_08UTC
 ```
 
-<!--
-If Duration can be added as a STORING column in the secondary index, the number of distributed JOINs can be reduced and performance can be improved.
-Since the STORING column is not part of the key, it must be skipped as a Residual Condition, so the rows scanned will be relatively large. However, Cloud Spanner is good at scanning contiguous regions, so the performance is better than before the improvement, where there are many random accesses with remote calls.
-
-In general, if all queries are accessed efficiently with Seek Condition, the number of secondary indexes will increase, which will reduce write cost and maintainability, but it is easy to increase the number of columns for STORING.
-It is preferable to add columns used in filters to the STORING columns whenever possible.
--->
-
 セカンダリインデックスの STORING 列として `Duration` を追加することができれば、分散 JOIN の件数が削減でき、パフォーマンスを改善できます。
 STORING した列はキーの一部ではなく Seek Condition としては処理することはできず、 Residual Condition として読み飛ばして処理する必要があるため rows scanned はこのケースでも17000行を超えており、無駄な処理は残っています。しかし Spanner は連続領域のスキャンは得意なため、リモートコールを伴うランダムアクセスが多い改善前と比較すればパフォーマンスは大幅によくなります。
 
@@ -451,10 +429,7 @@ STORING した列はキーの一部ではなく Seek Condition としては処�
 
 ### タイムスタンプを使った非効率なスキャンを避ける
 
-<!--
-Because timestamp values can cause hotspots in writes, a requirement for a global secondary index is preferable to avoid if possible.
-However, it is common to want to filter globally by timestamp.
--->
+<!-- Because timestamp values can cause hotspots in writes, a requirement for a global secondary index is preferable to avoid if possible. However, it is common to want to filter globally by timestamp. -->
 
 
 タイムスタンプ値は書き込みでのホットスポットを避けるため、グローバルなセカンダリインデックスを避けることがベストプラクティスです。しかし、タイムスタンプによるグローバルなフィルタをしたい場合が珍しくありません。
@@ -466,10 +441,7 @@ UserId INT64 NOT NULL,
 ) PRIMARY KEY (UserId, LastAccess);
 ```
 
-<!--
-The primary key of this table is timestamped per UserId, which is a good design to avoid hotspots even if LastAccess is monotonically increasing.
-However, this key design is only suitable for queries filtered by timestamp per UserId. It is not suitable for filtering by timestamp across users.
--->
+<!-- The primary key of this table is timestamped per UserId, which is a good design to avoid hotspots even if LastAccess is monotonically increasing. However, this key design is only suitable for queries filtered by timestamp per UserId. It is not suitable for filtering by timestamp across users. -->
 
 このテーブルのプライマリキーは `UserId` ごとにタイムスタンプが設定されているため `LastAccess` が短調増加であってもホットスポットとならない良い設計となっています。
 しかし、このキー設計は `UserId` ごとにタイムスタンプでフィルタするクエリのみに適しています。ユーザを跨いだタイムスタンプでのフィルタには適しません。
@@ -514,11 +486,7 @@ Predicates(identified by ID):
 3: Seek Condition: (BETWEEN($UserId, @fromuserid, @touserid) AND BETWEEN($LastAccess, @fromlastaccess, @tolastaccess))
 ```
 
-<!--
-At first glance, this query looks fine because it consists only of a Seek Condition, not a full scan.
-However, the large number of rows per UserId that hit `LastAccess BETWEEN @fromLastAccess AND @toLastAccess` makes it an anti-pattern with little performance improvement.
-If such queries are executed frequently or constitute a peak load, they are candidates for optimization.
--->
+<!-- At first glance, this query looks fine because it consists only of a Seek Condition, not a full scan. However, the large number of rows per UserId that hit `LastAccess BETWEEN @fromLastAccess AND @toLastAccess` makes it an anti-pattern with little performance improvement. If such queries are executed frequently or constitute a peak load, they are candidates for optimization. -->
 
 このクエリはフルスキャンではなく、 Seek Condition のみからなるため一見問題ないように見えます。
 しかし、 `LastAccess BETWEEN @fromLastAccess AND @toLastAccess` にヒットする行が大量の `UserId` ごとに存在するため、パフォーマンスの改善効果は低いアンチパターンであると言えます。
@@ -527,11 +495,7 @@ If such queries are executed frequently or constitute a peak load, they are cand
 
 Better
 
-<!--
-For example, a secondary index could be created using a ShardId with a value of 20 based on the hash value of the UserId.
-This secondary index not only avoids hotspots by spreading the writes to the 20 to the latest timestamp,
-range scan within the 20 separate regions, it may also improve the efficiency of queries that filter timestamps against the entire table.
--->
+<!-- For example, a secondary index could be created using a ShardId with a value of 20 based on the hash value of the UserId. This secondary index not only avoids hotspots by spreading the writes to the 20 to the latest timestamp, range scan within the 20 separate regions, it may also improve the efficiency of queries that filter timestamps against the entire table. -->
 
 例えば、 UserId のハッシュ値を元にした20の値を持つ ShardId を使ったセカンダリインデックスを作ることができます。次のような効果が期待できます。
 
@@ -573,24 +537,7 @@ https://stackoverflow.com/a/62094370
 https://cloud.google.com/spanner/docs/commit-timestamp#optimize
 :::
 
-<!--
-Note
-
-To make LIMIT work with ORDER BY across ShardId, optimization is needed, such as using a correlated subquery.
-
-See also https://stackoverflow.com/a/62094370
-
-Although its use is limited, filters on columns with allow_commit_timestamp=true can be processed efficiently without a secondary index because the scan is optimized.
-If you do not need ORDER BY & LIMIT, consider using this option after verifying from the rows scanned value that the optimization actually occurs.
-
-https://cloud.google.com/spanner/docs/commit-timestamp#optimize
--->
-
-<!--### Aggregate Functions & `GROUP BY`-->
-
 ### 集約関数と `GROUP BY`
-
-<!-- #### Use STORING for columns to be aggregated -->
 
 #### 集約対象のカラムを `STORING` する
 
@@ -644,10 +591,7 @@ Aggregate を Distributed Cross Apply による分散 JOIN 後にしか処理で
 
 Better
 
-<!--
-Adding columns used by the Aggregate Function to STORING can eliminate the need for distributed JOINs.
-The same effect may be achieved by including the necessary columns in the secondary index key, but STORING can also be added with `ALTER INDEX ADD STORED COLUMN`. This is easier to maintain with fewer changes when more columns are used.
--->
+<!-- Adding columns used by the Aggregate Function to STORING can eliminate the need for distributed JOINs. The same effect may be achieved by including the necessary columns in the secondary index key, but STORING can also be added with `ALTER INDEX ADD STORED COLUMN`. This is easier to maintain with fewer changes when more columns are used. -->
 
 
 Aggregate Function で使う列を STORING することで分散 JOIN を不要にすることができます。
@@ -689,26 +633,20 @@ optimizer version:    5
 optimizer statistics: auto_20230616_13_28_03UTC
 ```
 
-<!--
-Distributed JOINs are no longer necessary, and the stream aggregation is simpler than Hash Aggregate, so it is faster than before STORING.
--->
+<!-- Distributed JOINs are no longer necessary, and the stream aggregation is simpler than Hash Aggregate, so it is faster than before STORING. --> 
 
 このように分散 JOIN は不要となり、ハッシュテーブルを作る必要がある Hash Aggregate よりも単純な Stream Aggregate となるため、 STORING する前よりも高速かつメモリ等のリソースの使用量も少なくなります。
 
 
 ### ORDER BY & LIMIT
 
-<!--
-#### Use descending ordered index for descending sort
--->
+<!-- #### Use descending ordered index for descending sort -->
 
 #### 降順ソートには降順インデックスを使う
 
 Worse
 
-<!--
-Since Cloud Spanner cannot scan in reverse order, an explicit sort will occur if there are only indexes in reverse order to the ORDER BY clause.
--->
+<!-- Since Cloud Spanner cannot scan in reverse order, an explicit sort will occur if there are only indexes in reverse order to the ORDER BY clause. -->
 
 他のデータベースではインデックスを逆順に辿ることができるため降順インデックスの概念すら無かったものもあります。しかし、 Spanner はテーブルやインデックスを逆順にスキャンすることはできないため、 `ORDER BY` 句とは逆順のインデックスしかない場合、必ず明示的なソートが発生します。
 
@@ -762,20 +700,14 @@ optimizer version:    5
 optimizer statistics: auto_20230616_13_28_03UTC
 ```
 
-<!--
-In this case, since Limit is not possible without Sort, we can see that even with `LIMIT 1`, 1024000 rows (all test data) are scanned and then sorted and discarded using Local Sort Limit.
-In general, queries like this that do not reduce work to process even with a smaller `LIMIT` amount are candidates for optimization because the larger the database, the heavier the query becomes.
--->
+<!-- In this case, since Limit is not possible without Sort, we can see that even with `LIMIT 1`, 1024000 rows (all test data) are scanned and then sorted and discarded using Local Sort Limit. In general, queries like this that do not reduce work to process even with a smaller `LIMIT` amount are candidates for optimization because the larger the database, the heavier the query becomes. -->
 
 この場合 Sort なしに Limit できないため、 `LIMIT 1` であっても 1024000行(テストデータ全て)をスキャンしてから Local Sort Limit でソートして捨てていることが分かります。
 このようなクエリはデータベースが大きくなるほど重くなるためスケールせず、最適化の候補です。
 
 Better
 
-<!--
-To optimize `ORDER BY DESC` queries, explicitly define DESC ordered indexes.
--->
-
+<!-- To optimize `ORDER BY DESC` queries, explicitly define DESC ordered indexes. --> 
 
 `DESC` で `ORDER BY` するクエリを最適化したい場合は明示的に `DESC` 順にしたインデックスを定義します。
 
@@ -829,9 +761,8 @@ optimizer version:    5
 optimizer statistics: auto_20230616_13_28_03UTC
 ```
 
-<!--
-Sorting is no longer necessary, and scanning just one row in index order does both ORDER BY and LIMIT jobs.
--->
+<!-- Sorting is no longer necessary, and scanning just one row in index order does both ORDER BY and LIMIT jobs. -->
+
 Sort オペレーションは必要なくなり、インデックス順に 1 行だけスキャンすることで `ORDER BY` と `LIMIT` 両方の仕事をできるようになりました。
 
 :::message
@@ -847,23 +778,17 @@ See also
 https://cloud.google.com/spanner/docs/sql-best-practices?hl=en#optimize_joins
 
 ### SELECT
-<!--
-#### Avoid back joins if needed
--->
+
+<!-- #### Avoid back joins if needed -->
 
 #### 必要に応じてバックジョインを避ける
 
-<!--
-The process of retrieving a table row from a secondary index is called a back join.
-In Cloud Spanner, a distributed database, back join is expensive because it is almost always a distributed join.
--->
+<!-- The process of retrieving a table row from a secondary index is called a back join. In Cloud Spanner, a distributed database, back join is expensive because it is almost always a distributed join. -->
 
 Spanner のドキュメント上ではセカンダリインデックスからテーブルの行を取得する暗黙の JOIN は back join(邦訳だとバック結合) と呼ばれます。
 他のデータベースだとインデックスからテーブルのルックアップに相当するこの back join は分散データベースである Spanner では多くの場合分散 JOIN を意味するため、リモートコールを要し本質的に安価ではありません。
 
-<!--
-See also
--->
+<!-- See also -->
 
 下記も参照してください。
 
@@ -872,9 +797,7 @@ See also
 
 Worse
 
-<!--
-If you try to use a Duration column that is not included in the SongsBySongName index, you can see on the execution plan that a distributed JOIN using Distributed Cross Apply will occur.```
--->
+<!-- If you try to use a Duration column that is not included in the SongsBySongName index, you can see on the execution plan that a distributed JOIN using Distributed Cross Apply will occur.``` -->
 
 下記の例では `SongsBySongName` インデックスに含まれていない `Duration` 列を使おうとすると、 Distributed Cross Apply を使った分散 JOIN (ID: 1) が発生することが実行計画上から確認できます。
 
@@ -914,10 +837,7 @@ Predicates(identified by ID):
 
 Better
 
-<!--
-These distributed JOINs can be avoided by index-only scan, just as in a general RDBMS.
-To perform index-only scan, a combination of the following two methods is used.
--->
+<!-- These distributed JOINs can be avoided by index-only scan, just as in a general RDBMS. To perform index-only scan, a combination of the following two methods is used. -->
 
 このようなインデックスからテーブルデータを取得するための分散 JOIN を回避するために、 Spanner でも一般的な RDBMS でもよくあるテクニックを使うことができます。
 テーブルから行を取得せずにインデックスから必要な列を全て取得する index-only scan です。
@@ -927,10 +847,7 @@ index-only scan にするためにはクエリを変えるか、インデック�
 <!-- ##### A: Reduce SELECT-ed columns -->
 ##### A: クエリを変え、 `SELECT` する列を減らす
 
-<!--
-If you can reduce the number of columns to SELECT, you may be able to eliminate distributed JOINs even with the secondary indexes we have.
-There are many queries that SELECT all columns, but do you really need all columns?
--->
+<!-- If you can reduce the number of columns to SELECT, you may be able to eliminate distributed JOINs even with the secondary indexes we have. There are many queries that SELECT all columns, but do you really need all columns? -->
 
 `SELECT` する列を減らせば、今あるセカンダリインデックスのままでも back join を不要にできるかもしれません。
 DTO や構造体に詰めるために全カラムを `SELECT` するクエリは多いですが、本当にそのロジックで全ての列が必要でしょうか？
@@ -959,10 +876,7 @@ Predicates(identified by ID):
 
 ##### B: カバリングインデックスのために `STORING` を使う
 
-<!--
-If you have a limited number of columns that need to be SELECTed, you can create a "covering index" that includes all columns used by the query.
-STORING can also be added by `ALTER INDEX ADD STORED COLUMN`, which is easier than adding more key columns to a secondary index.
--->
+<!-- If you have a limited number of columns that need to be SELECTed, you can create a "covering index" that includes all columns used by the query. STORING can also be added by `ALTER INDEX ADD STORED COLUMN`, which is easier than adding more key columns to a secondary index. -->
 
 `SELECT` を含めクエリで使う必要があるカラムが限られているのであれば、クエリが使う全てのカラムを含めた「カバリングインデックス」を作ることを検討すると良いでしょう。
 `STORING` は `ALTER INDEX ADD STORED COLUMN` によって追加することもできるので、セカンダリインデックスのキー列を増やすよりは容易にメンテナンスできます。
@@ -1008,15 +922,11 @@ CREATE INDEX SingersByFirstName ON Singers(FirstName);
 CREATE INDEX SingersByFirstNameLastNameStoring ON Singers(FirstName, LastName) STORING(BirthDate);
 ```
 
-<!--
-Since both secondary indexes have `FirstName` as a prefix, a query that simply filters by `FirstName` will have exactly the same execution plan regardless of which secondary index is used.
--->
+<!-- Since both secondary indexes have `FirstName` as a prefix, a query that simply filters by `FirstName` will have exactly the same execution plan regardless of which secondary index is used. -->
 
 双方のセカンダリインデックスとも `FirstName` カラムをプリフィックスに持つため、単に `FirstName` でフィルタするクエリはどちらのセカンダリインデックスを使っても全く同じ実行計画となります。
 
-<!--
-In case of `SingersByFirstName`
--->
+<!-- In case of `SingersByFirstName` -->
 
 `SingersByFirstName` の場合、実行計画は下記のようになります。
 
@@ -1050,9 +960,7 @@ Predicates(identified by ID):
 24: Seek Condition: ($SingerId' = $batched_SingerId)
 ```
 
-<!--
-In case of `SingersByFirstNameLastNameStoring`
--->
+<!-- In case of `SingersByFirstNameLastNameStoring` -->
 
 `SingersByFirstNameLastNameStoring` の場合、実行計画は下記のようになります。
 
@@ -1086,18 +994,12 @@ Predicates(identified by ID):
 27: Seek Condition: ($SingerId' = $batched_SingerId)
 ```
 
-<!--
-In general, secondary indexes with more key suffixes and STORING tend to be able to handle other queries as well.
-It is preferable to keep the schema simple by removing unnecessary secondary indexes, such as SingersByFirstName, so that more queries can be processed with fewer indexes.
--->
+<!-- In general, secondary indexes with more key suffixes and STORING tend to be able to handle other queries as well. It is preferable to keep the schema simple by removing unnecessary secondary indexes, such as SingersByFirstName, so that more queries can be processed with fewer indexes. -->
 
 一般的に、あるクエリをより高速化するためにキーのサフィックスや `STORING` を増やしたセカンダリインデックスは他のより条件の緩いクエリでも活用可能な傾向があります。
 今回の例における `SingersByFirstName` のような不要なセカンダリインデックスを削除して数少ないインデックスで多くのクエリを処理できるようにすることで、スキーマを単純に保つことが好ましいでしょう。
 
-<!--
-Especially in Cloud Spanner, increasing the number of secondary indexes that are not INTERLEAVE on a table increases the need for distributed commits with two-phased commits. Even if the secondary indexes are completely unnecessary.
-Do not continue to degrade Write performance for the sake of something that does not even benefit Read.
--->
+<!-- Especially in Cloud Spanner, increasing the number of secondary indexes that are not INTERLEAVE on a table increases the need for distributed commits with two-phased commits. Even if the secondary indexes are completely unnecessary. Do not continue to degrade Write performance for the sake of something that does not even benefit Read. -->
 
 Cloud Spanner では特に、テーブルに INTERLEAVE されていないセカンダリインデックスを増やすことは two-phased commit による分散コミットの必要性を増やします。
 Read のメリットすらないもののために Write のパフォーマンスを悪化させ続けることは避けましょう。
