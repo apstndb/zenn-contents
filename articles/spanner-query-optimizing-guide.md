@@ -1,5 +1,5 @@
 ---
-title: "Spanner クエリ最適化の基本"
+title: "実行計画を元にした Spanner クエリ最適化の実践"
 emoji: "🍣"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [spanner]
@@ -30,7 +30,7 @@ published: false
 
 - Spanner ユーザでない人に何らかの先入観を与えることは意図していませんので、 Spanner ユーザ以外は読む必要はありません。
 - Spanner で複雑な分析クエリを実行することはもちろん推奨しません。何らかの分散処理基盤にオフロードすることを推奨します。
-  - 例えば必要に応じて [Data Boost](https://cloud.google.com/spanner/docs/databoost/databoost-overview) を有効にし、 BigQuery([`EXTERNAL_QUERY` もしくは外部データセット](https://cloud.google.com/bigquery/docs/spanner-federated-queries?hl=en)), [Cloud Dataflow](https://cloud.google.com/spanner/docs/dataflow-connector?hl=en) するなどの選択肢があります。
+  - 例えば必要に応じて [Data Boost](https://cloud.google.com/spanner/docs/databoost/databoost-overview) を有効にし、 BigQuery([`EXTERNAL_QUERY` もしくは外部データセット](https://cloud.google.com/bigquery/docs/spanner-federated-queries?hl=en)), [Cloud Dataflow](https://cloud.google.com/spanner/docs/dataflow-connector?hl=en) などを使う選択肢があります。
 - この記事に書かれたプラクティスが一般的に適用可能で常に問題が解決できるというような主張はしません。個別事象で問題を解決するために検討できる選択肢を増やすのが目的です。
 - トレードオフが存在することを否定する意図はありません。
 
@@ -41,11 +41,14 @@ published: false
 > 注意深い実行計画の調査結果は、 うわべだけのベンチマークよりも信用のおけるものです。
 > 完全な負荷テストは意味のあることですが、そのための手間はかかります。
 
-* 本質的に非効率な処理を含むクエリの多くは本番相当のデータがない開発用データベースでも注意深く実行計画を読むことで負荷試験よりも早いフェーズで発見可能です。
+* 本質的に非効率な処理を含むクエリの多くは、注意深く実行計画を読むことで負荷試験よりも早いフェーズで発見可能です。
+  * これは本番相当のデータがない開発用データベースしかない状態であっても例外ではありません。
 * クエリの実行計画をできるだけ開発中の早期にレビュー可能な状態で共有しましょう。
   * 例えば、 GitHub に添付可能なテキスト形式で得られる `spanner-cli` 等の `EXPLAIN` の結果を GitHub の Pull Request に貼るだけで良いでしょう。
     * 時期尚早な最適化をする必要はありませんが、クエリが期待と大きく違わない形で処理可能なことを他の人もレビューできる状態にすることが重要です。
         * 最初は読めなくても、事後に振り返りをしているうちに読めるようになるでしょう。
+* データの有無によってコストベース最適化によって異なる実行計画が選ばれる場合はありますが、運良く良くなることに期待するのではなく、運悪く悪くなる可能性を想定しましょう。
+  * オプティマイザバージョンを下げた方が予測可能性が高いケースもあります。具体的には[バージョン5](https://cloud.google.com/spanner/docs/query-optimizer/versions#version-5)からコストベースで最適化される項目が増えたので[バージョン4](https://cloud.google.com/spanner/docs/query-optimizer/versions#version-4)に固定することも検討の価値があります。
 * 定期的に非効率なクエリの存在をレビューしましょう。
     * Query Stats https://cloud.google.com/spanner/docs/introspection/query-statistics
     * Query Insights https://cloud.google.com/spanner/docs/using-query-insights
@@ -67,7 +70,7 @@ Read のパフォーマンスを高めるには Write を犠牲にすること�
 
 しかし、トレードオフ以前の問題になっている場面はよくあります。先ほどのグラフで言えば、線上の点がトレードオフした上でのそれぞれの最適解だとすれば、それよりも非効率的な選択肢は無数に存在します。
 
-![spanner-read-write-tradeoff-unoptimized.png](../images/spanner-read-write-tradeoff-unoptimized.png)
+![spanner-read-write-tradeoff-unoptimized.png](/images/spanner-read-write-tradeoff-unoptimized.png)
 
 このような非効率な状態となる理由の一部として、クエリで十分に役立たないセカンダリインデックスに Write のコストを掛けているというものがあります。
 この記事では、どのようにクエリに最適化することで Write のコストを無駄にせずに、 Read のパフォーマンスを上げられるかについてフォーカスします。
@@ -193,7 +196,7 @@ ORDER BY total_cpu_seconds DESC
 Since it is easier to handle when imported into a spreadsheet, use [execspansql](https://github.com/apstndb/execspansql) to retrieve the query execution results in CSV.
 -->
 
-結果を共有するために CSV で出力してスプレッドシートにインポートするなどをしても良いでしょう。
+結果を共有するために CSV で出力して Google Sheets などのスプレッドシートにインポートするのも一つの方法です。
 
 合計の負荷が大きい順に取得しているため、上位にあるものはどれもパフォーマンス改善上重要なクエリであると考えられます。観点としては下記のようなものがあります。
 
