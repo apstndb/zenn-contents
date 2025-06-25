@@ -35,7 +35,7 @@ SQL データベースにおいて対話型クライアントは、SQLの前身�
 - Oracle の [dbcli](https://docs.oracle.com/en/cloud/paas/base-database/cli-reference/index.html)
 - SQL Server の [mssql-cli](https://github.com/dbcli/mssql-cli), [sqlcmd](https://github.com/microsoft/go-sqlcmd)
   - SQL Server は他と比べると GUI ツールの [SQL Server Management Studio](https://learn.microsoft.com/en-us/ssms/) の比重が大きそうです。
-  - 
+
 対して Spanner はどうだったでしょうか。ユーザが直接使うことができる公式が提供するインターフェースは次のようなものでした。
 
 - [gcloud CLI 内の `gcloud spanner` サブコマンド](https://cloud.google.com/spanner/docs/getting-started/gcloud)
