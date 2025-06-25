@@ -382,7 +382,7 @@ Google によって `gcloud components` の一つとして配布されている�
 
 ## 謝辞
 
-この公式の Spanner CLI と OSS spanner-cli の関係について確認したところ、 spanner-cli を今後メンテナンスモードにし、アーカイブすることを検討しているとのことでした。
+この公式の Spanner CLI と OSS spanner-cli の関係について確認したところ、 spanner-cli を今後メンテナンスモードにし、 公式 Spanner CLI の GA 後にはアーカイブすることを検討しているとのことでした。
 
 https://github.com/cloudspannerecosystem/spanner-cli/issues/214
 > Today Google officially released the official Spanner CLI and it's basically equivalent (or superset) of OSS spanner-cli in terms of functionality.
