@@ -3,7 +3,7 @@ title: "spanner-cli コントリビュータが見る公式 Spanner CLI"
 emoji: "🔧"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [cloudspanner, gcp, database, cli]
-published: false
+published: true
 ---
 
 公式の Spanner CLI がプレビューリリースされました。
@@ -13,26 +13,29 @@ https://cloud.google.com/spanner/docs/release-notes
 これが何なのかについて観察して分かることについて、 OSS である [spanner-cli](https://github.com/cloudspannerecosystem/spanner-cli) のコントリビュータであり、そのフォークである [spanner-mycli](https://github.com/apstndb/spanner-mycli) の作者である無職の技術愛好家 apstndb の視点で書いていこうと思います。  spanner-mycli については [私が spanner-cli をフォークした理由: spanner-mycli の紹介](https://zenn.dev/apstndb/articles/introduce-spanner-mycli) なども読んでみてください。
 
 :::message
-この記事はまだ Preview である `gcloud alpha spanner cli` について説明しています。いつ仕様が変わるか分からないことに注意してください。
+この記事はまだ Preview である `gcloud alpha spanner cli` について、2025年6月28日時点の状態で見えるものについて説明しています。いつ仕様が変わるか分からないことに注意してください。
 :::
+
+## この記事のポイント
+
+- 公式 Spanner CLI は OSS spanner-cli v0.10.6 からの派生
+- バイナリ解析により技術的な証拠を発見
+- メタコマンドの導入など独自の進化
+- 公式とOSSの共存による健全なエコシステムへの期待
 
 ## 対話型ツールの重要性
 
 SQL データベースにおいて対話型クライアントというのは必須のものであり続けました。
 
-SQL が SQL になる前の名前である、 [SEQUEL: A structured English query language](https://dl.acm.org/doi/10.1145/800296.811515) においても、 interactive system への言及が複数あり、対話型システムでの利用が前提であることが読み取れます。
+SQL データベースにおいて対話型クライアントは、SQLの前身である [SEQUEL: A structured English query language](https://dl.acm.org/doi/10.1145/800296.811515) の時代から interactive system として言及されているように必須のツールとして認識されてきました。
+主要なRDBMSは例外なくファーストパーティーの対話型クライアントを提供しています：
 
-> In an interactive system this template might be presented to the user, who then fills in the blanks.
-> ...
-> Again an interactive system can aid in this process.
-
-JDBC や ODBC のようなオープンなインターフェースを提供していたとしても、主要のどの RDBMS もほぼ例外なくスタンドアロンの対話型クライアントをファーストパーティーで提供しているという認識です。例えば下記のようなものがあります。
-
-- MySQL の mysql
-- PostgreSQL の psql
-- Oracle の dbcli
+- MySQL の [mysql](https://dev.mysql.com/doc/refman/9.3/en/mysql.html)
+- PostgreSQL の [psql](https://www.postgresql.org/docs/current/app-psql.html)
+- Oracle の [dbcli](https://docs.oracle.com/en/cloud/paas/base-database/cli-reference/index.html)
 - SQL Server の [mssql-cli](https://github.com/dbcli/mssql-cli), [sqlcmd](https://github.com/microsoft/go-sqlcmd)
-  - SQL Server は他と比べると GUI ツールの SQL Server Management Studio の比重が大きそうです。
+  - SQL Server は他と比べると GUI ツールの [SQL Server Management Studio](https://learn.microsoft.com/en-us/ssms/) の比重が大きそうです。
+  - 
 対して Spanner はどうだったでしょうか。ユーザが直接使うことができる公式が提供するインターフェースは次のようなものでした。
 
 - [gcloud CLI 内の `gcloud spanner` サブコマンド](https://cloud.google.com/spanner/docs/getting-started/gcloud)
@@ -55,7 +58,7 @@ gcloud spanner databases execute-sql example-db \
 
 ## 公式の Spanner CLI
 
-そのような状態が何年も続いたのちに、突然公式の Spanner CLI がリリースされました。 JST では2025年6月25日の朝の出来事です。
+そのような状態が何年も続いたのちに、突然公式の Spanner CLI がリリースされました。 この記事を書いている2025年6月25日(JST)の朝の出来事です。
 
 ### インストール
 
@@ -92,10 +95,48 @@ To update your SDK installation to the latest version [528.0.0], run:
 │ Not Installed │ Spanner Cli                                          │ spanner-cli                  │  12.1 MiB │
 ```
 
-なので、 下記コマンドで `spanner-cli` コンポーネントをインストールする必要があります。
+なので、 下記のようにして `spanner-cli` コンポーネントをインストールする必要があります。
 
 ```
-$ gcloud components install spanner-cli
+$ gcloud components install --quiet spanner-cli
+
+Your current Google Cloud CLI version is: 528.0.0
+Installing components from version: 528.0.0
+
+┌──────────────────────────────────────────────────────┐
+│         These components will be installed.          │
+├─────────────────────────────────┬─────────┬──────────┤
+│               Name              │ Version │   Size   │
+├─────────────────────────────────┼─────────┼──────────┤
+│ Spanner Cli (Platform Specific) │   1.0.0 │ 12.1 MiB │
+└─────────────────────────────────┴─────────┴──────────┘
+
+For the latest full release notes, please visit:
+  https://cloud.google.com/sdk/release_notes
+
+Performing in place update...
+
+╔════════════════════════════════════════════════════════════╗
+╠═ Downloading: Spanner Cli                                 ═╣
+╠════════════════════════════════════════════════════════════╣
+╠═ Downloading: Spanner Cli (Platform Specific)             ═╣
+╠════════════════════════════════════════════════════════════╣
+╠═ Installing: Spanner Cli                                  ═╣
+╠════════════════════════════════════════════════════════════╣
+╠═ Installing: Spanner Cli (Platform Specific)              ═╣
+╚════════════════════════════════════════════════════════════╝
+
+Performing post processing steps...done.                                                                                                                                                                                                                                                                            
+
+Google Cloud CLI works best with Python 3.12 and certain modules.
+
+Setting up virtual environment
+Updating modules...
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 31.2 MB/s eta 0:00:00
+Modules updated.
+Virtual env enabled.
+
+Update done!
 ```
 
 インストールすれば、 `gcloud alpha spanner cli` を使うことができます。
@@ -165,7 +206,7 @@ Flags:
       --xml                            Show output in XML format.
 ```
 
-### spanner-cli と公式 Spanner CLI の関係
+### 公式 Spanner CLI は OSS spanner-cli の派生物である証拠
 
 
 OSS の spanner-cli と公式 Spanner CLI の関係性については一切公式の [Spanner CLI のドキュメント](https://cloud.google.com/spanner/docs/spanner-cli)上には記載がありません。
@@ -200,6 +241,8 @@ Google のモノレポである `google3` 内にベンダリングされたサ�
 このライブラリを使っているソフトウェアは spanner-cli 以外には一つも存在しません。これは spanner-cli の派生物である確度の高い証拠であると言えるでしょう。
 
 https://pkg.go.dev/github.com/apstndb/gsqlsep?tab=importedby
+
+![](/images/gsqlsep-imported-by.png)
 
 :::message
 現在、公式の Spanner CLI は Spanner PostgreSQL interface に対応していないと明記されています。
@@ -237,8 +280,34 @@ ERROR: invalid statement
 `DESCRIBE` をはじめ、多くの spanner-cli の機能が公式の Spanner CLI でまだ使うことができますが、公式ドキュメントに文書化されていないことから今後のリリースで削除される可能性があります。
 :::
 
+### フォーク関係の整理
 
-## 公式の Spanner CLI 特有の機能
+ここまでの調査から、OSS の spanner-cli と公式 Spanner CLI、そして spanner-mycli の関係を整理すると以下のようになります（2025年6月25日現在）。
+
+```mermaid
+gitGraph
+    commit id: "spanner-cli v0.10.5"
+    commit id: "spanner-cli v0.10.6" tag: "v0.10.6"
+    branch official-spanner-cli
+    checkout official-spanner-cli
+    commit id: "Google internal fork"
+    commit id: "Various changes"
+    commit id: "Official Spanner CLI v1.0.0" tag: "v1.0.0 (Preview)"
+    checkout main
+    branch spanner-mycli
+    checkout spanner-mycli
+    commit id: "apstndb fork"
+    commit id: "spanner-mycli v0.1.0" tag: "v0.1.0"
+    commit id: "Add new features"
+    commit id: "spanner-mycli v0.19.0" tag: "v0.19.0 (latest)"
+    checkout main
+    commit id: "spanner-cli v0.11.0" tag: "v0.11.0 (latest)"
+```
+
+このように、公式 Spanner CLI と spanner-mycli は共に spanner-cli v0.10.6 からフォークされており、それぞれ独自の進化を遂げています。2025年6月25日現在、OSS の spanner-cli は v0.11.0、spanner-mycli は v0.19.0 まで開発が進んでいます。
+
+
+## 公式 Spanner CLI で追加された新機能
 
 公式の Spanner CLI はこの初期リリースの時点で、 OSS の spanner-cli から大きく変わっている点があります。
 
@@ -246,20 +315,20 @@ ERROR: invalid statement
 
 最大の変化はメタコマンドの導入です。
 
-> | Command   | Syntax | Description                                                                      |
-> |-----------|--------|----------------------------------------------------------------------------------|
-> | ?         | `\?`   | Displays help information. Same as `\h`.                                         |
-> | Delimiter | `\d`   | Sets the statement delimiter. The default delimiter is a semi-colon.             |
-> | Exit      | `\q`   | Exits the Spanner CLI. Same as quit.                                             |
-> | Go        | `\g`   | Sends and runs SQL statement in Spanner.                                         |
-> | Help      | `\h`   | Displays help information. Same as `\?`.                                         |
-> | Notee     | `\t`   | Turns off writing to the output file set by the `\T`.                            |
-> | Prompt    | `\R`   | Changes your prompt to a user prompt string.                                     |
-> | Quit      | `\q`   | Quits Spanner CLI. Same as exit.                                                 |
-> | Source    | `\.`   | Executes SQL from an input file. Takes `[filename]` as an argument.                |
-> | System    | `\!`   | Executes a system shell command.                                                 |
-> | Tee       | `\T`   | Appends command output to a specified `[filename]` along with the standard output. |
-> | Use       | `\u`   | Connects to another database. Takes the new database name as an argument.        |
+| Command   | Syntax | Description                                                                      |
+|-----------|--------|----------------------------------------------------------------------------------|
+| ?         | `\?`   | Displays help information. Same as `\h`.                                         |
+| Delimiter | `\d`   | Sets the statement delimiter. The default delimiter is a semi-colon.             |
+| Exit      | `\q`   | Exits the Spanner CLI. Same as quit.                                             |
+| Go        | `\g`   | Sends and runs SQL statement in Spanner.                                         |
+| Help      | `\h`   | Displays help information. Same as `\?`.                                         |
+| Notee     | `\t`   | Turns off writing to the output file set by the `\T`.                            |
+| Prompt    | `\R`   | Changes your prompt to a user prompt string.                                     |
+| Quit      | `\q`   | Quits Spanner CLI. Same as exit.                                                 |
+| Source    | `\.`   | Executes SQL from an input file. Takes `[filename]` as an argument.                |
+| System    | `\!`   | Executes a system shell command.                                                 |
+| Tee       | `\T`   | Appends command output to a specified `[filename]` along with the standard output. |
+| Use       | `\u`   | Connects to another database. Takes the new database name as an argument.        |
 
 これは [PostgreSQL psql コマンドのメタコマンド](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-META-COMMANDS)に強い影響を受けていると考えて良いと思われます。
 おそらく Spanner CLI のクライアント側に閉じた機能はメタコマンドとして今後拡張していくことになるのではないかと思われます。
