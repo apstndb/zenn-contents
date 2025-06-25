@@ -13,7 +13,7 @@ https://cloud.google.com/spanner/docs/release-notes
 これが何なのかについて観察して分かることについて、 OSS である [spanner-cli](https://github.com/cloudspannerecosystem/spanner-cli) のコントリビュータであり、そのフォークである [spanner-mycli](https://github.com/apstndb/spanner-mycli) の作者である無職の技術愛好家 apstndb の視点で書いていこうと思います。  spanner-mycli については [私が spanner-cli をフォークした理由: spanner-mycli の紹介](https://zenn.dev/apstndb/articles/introduce-spanner-mycli) なども読んでみてください。
 
 :::message
-この記事はまだ Preview である `gcloud alpha spanner cli` について、2025年6月28日時点の状態で見えるものについて説明しています。いつ仕様が変わるか分からないことに注意してください。
+この記事はまだ Preview である `gcloud alpha spanner cli` について、2025年6月25日時点の状態で見えるものについて説明しています。いつ仕様が変わるか分からないことに注意してください。
 :::
 
 ## この記事のポイント
