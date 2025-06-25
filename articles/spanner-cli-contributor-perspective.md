@@ -379,3 +379,13 @@ CLI ツールとしての機能は強化される一方、 Spanner の API に�
 Google によって `gcloud components` の一つとして配布されているが GitHub 上で開発されている [gsutil](https://github.com/GoogleCloudPlatform/gsutil) のようになることが好ましいとは考えています。
 
 これで公式のツールは今後も進化していくことが約束されましたが、私が持つ spanner-mycli も唯一 OSS としてアクティブに開発が続いている Spanner 対話型クライアントとして開発を続けていこうと考えています。
+
+## 謝辞
+
+この公式の Spanner CLI と OSS spanner-cli の関係について確認したところ、 spanner-cli を今後メンテナンスモードにし、アーカイブすることを検討しているとのことでした。
+
+https://github.com/cloudspannerecosystem/spanner-cli/issues/214
+> Today Google officially released the official Spanner CLI and it's basically equivalent (or superset) of OSS spanner-cli in terms of functionality.
+> To prevent confusion from having two separate CLIs, I'm considering to make OSS spanner-cli maintenance mode and archive this repository once the official Spanner CLI goes to GA.
+
+2018年10月の [v0.1.0](https://github.com/cloudspannerecosystem/spanner-cli) から数えると6年半以上の長きにわたって、ファーストパーティーの Google 自身が提供していない対話型クライアントとして Spanner コミュニティを支えてきた spanner-cli の作者・オーナー、 Yuki Furuyama さんに深く感謝します。
