@@ -345,7 +345,8 @@ gitGraph
 - `gcloud spanner` 統合
   - 接続先の指定は `gcloud spanner` と共通になり、 `gcloud config set` 等も対応
   - 認証: `--credential` は削除され gcloud credential に統合
-    - ただし `gcloud auth application-default revoke` したら使えなくなることを確認したので `gcloud auth login` だけではまだ使えないか
+    - ただし `gcloud auth application-default revoke` したら使えなくなることを確認したので `gcloud auth login` だけではまだ使えない様子
+      > `Error: failed to create sql shell: credentials: could not find default credentials. See https://cloud.google.com/docs/authentication/external/set-up-adc for more information`
   - `GCLOUD_WIDE_FLAG` 対応 `--impersonate-service-account` などのその他の `gcloud` レベルのフラグの対応にも言及されている
 - 一文字の short form は `--help` に対応する `-h` 以外は削除
 - spanner-cli において、ほぼデフォルトで指定していた `--verbose`(`-v`) が削除
