@@ -390,3 +390,12 @@ https://github.com/cloudspannerecosystem/spanner-cli/issues/214
 > To prevent confusion from having two separate CLIs, I'm considering to make OSS spanner-cli maintenance mode and archive this repository once the official Spanner CLI goes to GA.
 
 2018年10月の [v0.1.0](https://github.com/cloudspannerecosystem/spanner-cli) から数えると6年半以上の長きにわたって、ファーストパーティーの Google 自身が提供していない対話型クライアントとして Spanner コミュニティを支えてきた spanner-cli の作者・オーナー、 Yuki Furuyama さんに深く感謝します。
+
+## (2025-06-26) 追記
+
+なお、 spanner-cli の [CONTRIBUTING.md](https://github.com/cloudspannerecosystem/spanner-cli/blob/feb248b968ee0d84226f8f133872929291ad785c/CONTRIBUTING.md) に書かれているように、 Cloud Spanner Ecosystem organization 以下のプロジェクトへのコントリビューションは全て Google の [Contributor License Agreement(CLA)](https://cla.developers.google.com/) への合意のもと行われています。
+これにより spanner-cli へのコントリビューションを Google は自由に使うことへの許諾にコントリビューターは合意しているので、クローズドソースになること自体にはライセンス的な問題は何も存在しないはずです。
+
+ただ、 Spanner コミュニティに親しまれた spanner-cli との関係が説明されないことには混乱を生じさせると思うので、 GA になって Google Cloud 公式ブログでアナウンスされる時などに説明されると嬉しいですね。
+
+Google がファーストパーティーで対話型 CLI をメンテナンスすることを決めたことは間違いなく良いことですし、今後より良い方向に進むことを願います。
