@@ -3,7 +3,7 @@ title: "Spanner は本当に高い？思ったよりも低い Firestore との�
 emoji: "💰"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["gcp", "spanner", "firestore", "database", "cost"]
-published: false
+published: true
 ---
 
 カウシェ Tech Blog の [Firestore → Cloud SpannerでDBコスト93%削減！無停止でやり切った 1 年間の全記録](https://zenn.dev/kauche/articles/1e733da3748ee1) という記事が公開されました。
@@ -69,7 +69,7 @@ Firestore は完全に従量課金なので見るべき情報は Pricing のペ�
 - [Firestore in Datastore mode pricing](https://cloud.google.com/datastore/pricing?hl=en)
 
 Firestore の Native mode と、 Datastore mode はそれぞれ別のページで説明しており、用語がいくつか異なりますが価格体系そのものは同一です。
-ここからは Datastore mode の用語に統一しましょう。
+バックエンドの利用なので Datastore mode でも良いですが、新しい Native mode の用語に統一しましょう。
 
 | Firestore Native mode | Datastore mode     | Free usage     | Cost                                  |
 |-----------------------|--------------------|----------------|---------------------------------------|
