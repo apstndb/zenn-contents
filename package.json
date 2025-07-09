@@ -18,6 +18,6 @@
   },
   "homepage": "https://github.com/apstndb/zenn-contents#readme",
   "dependencies": {
-    "zenn-cli": "^0.1.159"
+    "zenn-cli": "^0.2.1"
   }
 }
