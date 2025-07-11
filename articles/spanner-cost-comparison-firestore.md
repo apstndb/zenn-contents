@@ -138,6 +138,12 @@ https://cloud.google.com/spanner/docs/performance?hl=en#increased-throughput
 
 よって、強調した値のみが今回気にすべき項目です。
 
+:::message
+(追記) 実はこのカタログスペックは途中で大幅に向上しています。
+[Cloud Spanner の価格性能比の大幅な改善を発表](https://cloud.google.com/blog/ja/products/databases/announcing-cloud-spanner-price-performance-updates) の記事で書かれたもので、 リリースノート上は[2023年10月11日](https://cloud.google.com/spanner/docs/release-notes#October_11_2023)に発表された [Performance and storage improvements](https://cloud.google.com/spanner/docs/performance#improved-performance) というのがそれで、典型的なスループットは Read/Write 共に1.5倍、ついでにストレージの限界が2.5倍というものでした。
+数ヶ月掛けて全てのリージョナル、デュアルリージョン、マルチリージョンインスタンス構成にロールアウトされたため今は当たり前になっています。それ以前の検証を見る場合はこの改善も念頭に入れて見ましょう。
+:::
+
 ##### Spanner 最小構成の価格とスループット
 
 [Compute capacity](https://cloud.google.com/spanner/docs/compute-capacity?hl=en#compute-capacity) のページにあるように、 Spanner インスタンスは1ノードを1000 Processing Units(以下 PU) として、 0.1 ノードである 100 PU のインスタンスから作ることができます。
