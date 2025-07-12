@@ -142,6 +142,7 @@ https://cloud.google.com/spanner/docs/performance?hl=en#increased-throughput
 (追記) 実はこのカタログスペックは途中で大幅に向上しています。
 [Cloud Spanner の価格性能比の大幅な改善を発表](https://cloud.google.com/blog/ja/products/databases/announcing-cloud-spanner-price-performance-updates) の記事で書かれたもので、 リリースノート上は[2023年10月11日](https://cloud.google.com/spanner/docs/release-notes#October_11_2023)に発表された [Performance and storage improvements](https://cloud.google.com/spanner/docs/performance#improved-performance) というのがそれで、典型的なスループットは Read/Write 共に1.5倍、ついでにストレージの限界が2.5倍というものでした。
 数ヶ月掛けて全てのリージョナル、デュアルリージョン、マルチリージョンインスタンス構成にロールアウトされたため今は当たり前になっています。それ以前の検証を見る場合はこの改善も念頭に入れて見ましょう。
+また、この概算値通りになるかどうかを確認したいのであれば [Key-Value ワークロードでの Spanner のコスト パフォーマンスをベンチマークする](https://cloud.google.com/blog/ja/products/databases/benchmarking-spanner-for-key-value-workloads) に YCSB ベンチマークの結果があります。必要であれば自分で試すことも可能です。
 :::
 
 ##### Spanner 最小構成の価格とスループット
