@@ -80,7 +80,7 @@ Firestore の Native mode と、 Datastore mode はそれぞれ別のページ�
 | PITR data             | PITR data          | N/A            | $0.115/GiB/month                      | 
 | Backup data           | Backup data        | N/A            | $0.038/GiB/month                      |
 | Restore operation     | Restore operation  | N/A            | $0.256/GiB                            |
-| N/A                   | Small operations   | 50,000 per day | Free (課金されるのは multi-regional のみ)      |
+| N/A                   | Small operations   | 50,000 per day | Free                                  |
 
 :::message
 余談ですが、 Firestore Native modeには small operations という概念はありません。Index entry reads, aggregation queries などは1000件あたり1ドキュメント分としてカウントされます。
@@ -213,7 +213,7 @@ $$x = F_{\text{free}} + \lceil\frac{C_{\text{spanner}}/P_{\text{firestore}}}{100
 Read 単体の損益分岐点は 7,450,000 reads/day ≒ 86 reads/sec で到達します。
 これは 100 PU の Spanner インスタンスのピーク性能の約 3.8% 程度です。
 
-![](/images/firestore_spanner_read_comparison.png)
+![FirestoreとSpannerの読み取り操作における日次コストを比較した折れ線グラフ。X軸は1日あたりの読み取り回数、Y軸は日次コスト（USD）を示します。Firestoreのコストは急上昇するのに対し、Spannerのコストは一定で、大量の読み取りではSpannerがはるかに安価であることを示しています。](/images/firestore_spanner_read_comparison.png)
 
 モニタリング推奨設定通り Spanner インスタンスの理論スループットの 65% まで使うとすると、 Spanner インスタンスは Firestore の1/17のコストという計算になりました。
 これは、一定のスケールを超えた場合、Firestoreを使い続けることがいかに大きなコスト増につながるかを明確に示しています。
@@ -262,7 +262,7 @@ Spanner が絶対的に安いかどうかはともかく、ワークロードの
 実のところ、 Firestore と Spanner は単に似ているだけではありません。
 Firestore 発表当初から Spanner と同じ技術を使っていることは示唆されていましたし、 後に Google の論文で Firestore は Spanner を使って実装されていることが既に説明されています。
 
-言い換えると、 Firestore は Spanner という強力なデータベース基盤を SQL の実行計画の複雑さやキャパシティプランニングを考えずに無料からスモールスタートで使えるように抽象化した付加価値の高いマネージドサービスです。
+言い換えると、 Firestore は Spanner という強力なデータベース基盤を専有でなく多くのユーザでマルチテナントに共有することで、 SQL の実行計画の複雑さやキャパシティプランニングを考えずに無料からスモールスタートで使えるように抽象化した付加価値の高いマネージドサービスです。
 理論的には Firestore ではこの付加価値の対価を設定していることがプロビジョニングモデルで割安な Spanner との価格差に現れている、と考えることもできるでしょう。
 
 Google の論文とそこに書かれた事実についてはこの記事では詳しくは説明しないので、グーグル・クラウド・ジャパン合同会社 中井悦司氏によるグーグルクラウドに関連する技術コラム グーグルのクラウドを支えるテクノロジー 内の下記記事を調べてみてください。
