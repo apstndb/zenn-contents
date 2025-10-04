@@ -3,7 +3,7 @@ title: "GA となった公式 Spanner CLI へのフィードバックのスス�
 emoji: "🤔"
 type: "tech"
 topics: ["cloudspanner", "gcp", "database", "cli"]
-published: false
+published: true
 ---
 
 ## はじめに
