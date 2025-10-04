@@ -9,7 +9,7 @@ published: false
 ## はじめに
 
 2025年10月2日、 Google Cloud による公式 Spanner CLI が GA (General Availability) となりました。これは、[spanner-cli コントリビュータが見る公式 Spanner CLI](https://zenn.dev/apstndb/articles/spanner-cli-contributor-perspective)で紹介したプレビューリリースから約3ヶ月後のことです。
-プレビューで私は多くの期待を持ちましたが、GA版はそれに十分応えたとは言えない状況です。
+プレビューで私は多くの期待を持ちましたが、 3ヶ月待っての GA をした今もそれに応えたとは言えない状況です。
 
 この記事では、 GA となった公式 Spanner CLI の現状をシビアに評価し、なぜ既存のコミュニティ製ツールの代替となり得ないのかを解説します。そして、すべての Spanner ユーザに、ツールの未来を共に創るための行動を呼びかけます。
 
