@@ -101,6 +101,7 @@ Google のカスタマーエンジニアによる [Cloud Spanner の実行計画
 これまで OSS spanner-cli にも関わってこなかった企業ユーザだとしても、自分たちの業務に不可欠なツールとしてシビアな目で公式 Spanner CLI を評価し、Google にフィードバックをしてはいかがでしょうか。
 
 公式 Spanner CLI が OSS spanner-cli の代替を超えて Spanner ユーザが求める標準ツールに成長する道はフィードバックの積み重ね以外にはないだろうと信じます。
+私も早速 `EXPLAIN` および `EXPLAIN ANALYZE` のサポートについては Google 公式の Issue Tracker に [Support of EXPLAIN and EXPLAIN ANALYZE in Spanner CLI](https://issuetracker.google.com/issues/449023251) の Issue を立てるアクションを行いました。
 
 ## 最後に
 
