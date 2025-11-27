@@ -123,7 +123,9 @@ Spanner ユーザの皆さんも、 Google にフィードバックしつつ、�
 フィードバックがあってのことかはわかりませんが、2025年11月に入ったあたりから [Spanner CLI commands](https://cloud.google.com/spanner/docs/spanner-cli-commands) のページに OSS spanner-cli 由来のコマンドが記載されるようになっています。
 ここに書かれていることをもって全ての機能が既に公式サポートの対象になっていると判断して使用することができるでしょう。
 
-:::warning
+OSS spanner-cli には存在しなかった機能として、対話モードでも [`BATCH` コマンドによる明示的な DDL のバッチ実行](https://cloud.google.com/spanner/docs/spanner-cli-commands#batch-commands)が可能になっているようです。
+
+:::message
 コマンドは列挙されていますが、その内容には多くの間違いが含まれているように見えるので注意が必要です。
 例えば、 `EXPLAIN ANALYZE` の説明は optimizer statistics package に言及していますが、 `EXPLAIN ANALYZE` は `ANALYZE` と違って optimizer statistics package のページで説明されているものと直接の関係がないためこれは誤りです。
 
@@ -136,9 +138,5 @@ Spanner ユーザの皆さんも、 Google にフィードバックしつつ、�
 公式 Spanner CLI のドキュメントは現状では OSS spanner-cli に存在した機能とプロダクトとしての Spanner というプロダクトの両方の面で正確でない状態になってしまっていることを意識する必要があります。
 :::
 
-:::message
-
-OSS spanner-cli には存在しなかった機能として、対話モードでも [`BATCH` コマンドによる明示的な DDL のバッチ実行](https://cloud.google.com/spanner/docs/spanner-cli-commands#batch-commands)が可能になっているようです。
-:::
 
 公式 Spanner CLI の更新内容がリリースノートに載ったことはまだないため、今後の開発がどうなるのかなどにも注目する必要があります。
