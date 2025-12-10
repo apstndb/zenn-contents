@@ -1,5 +1,5 @@
 ---
-title: "Spanner スキーマ更新について"
+title: "Spanner のスキーマ更新について"
 emoji: "🚀"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["Spanner"]
