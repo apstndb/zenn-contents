@@ -3,7 +3,7 @@ title: "Spanner スキーマ更新について"
 emoji: "🚀"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["Spanner"]
-published: false
+published: true
 ---
 
 この記事は [JP_Google Developer Experts Advent Calendar 2025](https://adventar.org/calendars/11658) の10日目の記事です。
