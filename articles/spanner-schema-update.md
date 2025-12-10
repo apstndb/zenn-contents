@@ -19,8 +19,7 @@ Spanner のスキーマ更新はダウンタイムを必要としないことが
 ## ダウンタイムがないとは何を意味するか
 
 DBMS によって異なりますし、改善されてきたり方法論が構築されてきてはいましたが、歴史的に RDBMS ではテーブルへのアクセスを妨げるグローバルロックや不整合との戦いとなるオンラインスキーマ更新は鬼門であり続けました。
-
-[スキーマ更新のパフォーマンス](https://docs.cloud.google.com/spanner/docs/schema-updates?hl=ja#performance)
+Spanner は、そのような問題を解決するダウンタイムなしのスキーマ更新を売りとしています。[スキーマ更新のパフォーマンス](https://docs.cloud.google.com/spanner/docs/schema-updates?hl=ja#performance)から引用します。
 
 > Spanner のスキーマの更新には、ダウンタイムは必要ありません。DDL 文のバッチを Spanner データベースに対して発行した場合、Spanner が更新を[長時間実行オペレーション](https://docs.cloud.google.com/spanner/docs/manage-long-running-operations?hl=ja)として適用する間も、中断なくデータベースでの書き込みと読み取りを続けることができます。
 
@@ -100,7 +99,7 @@ Spanner において[サポートされているスキーマ更新](https://docs
 
 まずその区別は [Schema versions created during schema updates](https://docs.cloud.google.com/spanner/docs/schema-updates?hl=en#schema-versions) 以下に表として確認できます。 (2025年12月10日現在の表を添付)
 
-![2025年12月10日現在のスキーマオペレーションの所要時間の表](../images/schema-operations-table.png)
+![2025年12月10日現在のスキーマオペレーションの所要時間の表](/images/schema-operations-table.png)
 
 「Estimated duration」の欄が「Minutes」になっているものは基本的にメタデータとしてのスキーマ情報を更新するだけで完了します。
 「Minutes to hours」になっているものは単にメタデータを更新するだけではなく何らかの処理が必要なものです。処理が必要なものは下記の3種類に限られることがわかります。
